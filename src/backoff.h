@@ -1,9 +1,10 @@
-#pragma once
-
+#include <jni.h>
 #include <algorithm>
 #include <random>
 #include <stdint.h>
-#include <time.h>
+#include <ctime>
+
+extern "C" {
 
 struct Backoff {
     int64_t minAmount;
@@ -20,7 +21,7 @@ struct Backoff {
       , maxAmount(max)
       , current(min)
       , fails(0)
-      , randGenerator((uint64_t)time(0))
+      , randGenerator((uint64_t)std::time(0))
     {
     }
 
@@ -38,3 +39,25 @@ struct Backoff {
         return current;
     }
 };
+
+JNIEXPORT jlong JNICALL Java_com_example_backoff_BackoffWrapper_create(JNIEnv* env, jobject, jlong minAmount, jlong maxAmount)
+{
+    return reinterpret_cast<jlong>(new Backoff(minAmount, maxAmount));
+}
+
+JNIEXPORT void JNICALL Java_com_example_backoff_BackoffWrapper_destroy(JNIEnv* env, jobject, jlong backoffPtr)
+{
+    delete reinterpret_cast<Backoff*>(backoffPtr);
+}
+
+JNIEXPORT void JNICALL Java_com_example_backoff_BackoffWrapper_reset(JNIEnv* env, jobject, jlong backoffPtr)
+{
+    reinterpret_cast<Backoff*>(backoffPtr)->reset();
+}
+
+JNIEXPORT jlong JNICALL Java_com_example_backoff_BackoffWrapper_nextDelay(JNIEnv* env, jobject, jlong backoffPtr)
+{
+    return reinterpret_cast<Backoff*>(backoffPtr)->nextDelay();
+}
+
+} // extern "C"
